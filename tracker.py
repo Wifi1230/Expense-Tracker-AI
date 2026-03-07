@@ -23,8 +23,31 @@ class BankAccount:
                 total += expense.price
         print(f"----------------------\nTOTAL: ${total:.2f}")
 
-account = BankAccount()
-account.add_expense("Pizza", 45, "Food")
-account.add_expense("Bus Ticket", 5, "Transport")
-account.add_expense("Burger", 25.5, "Food")
-account()
+def main():
+    account = BankAccount()
+    while True:
+        print("\n1. Add item\n2. Show list\n3. Exit")
+        choice = input("Choice: ")
+        if choice=="1":
+            while True:
+                item = input("Item name: ").strip()
+                price_raw = input("Price: ")
+                category = input("Category: ").strip()
+                try:
+                    price = float(price_raw)
+                    if not item or not category:
+                        raise ValueError("Empty strings")
+                    account.add_expense(item.capitalize(), float(price),category.capitalize())
+                    break
+                except ValueError:
+                    print("\n[!] Error: Invalid price or empty fields. Try again.")
+        elif choice=="2":
+            account()
+        elif choice=="3":
+            print("Goodbye!")
+            break
+        else:
+            print("Pick valid option (1-3)")
+            continue
+if __name__=="__main__":
+    main()
