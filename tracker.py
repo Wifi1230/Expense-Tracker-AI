@@ -1,7 +1,6 @@
 import csv
 from collections import defaultdict
 from datetime import datetime
-import os
 
 class Expense:
     def __init__(self, item, price, category,date,day):
@@ -91,11 +90,21 @@ class BankAccount:
 
     def __call__(self):
         print("\n--- EXPENSE REPORT ---")
+
+        all_expenses = []
+        for list_of_expenses in self._expenses.values():
+            all_expenses.extend(list_of_expenses)
+        
+        if not all_expenses:
+            print("No expenses to show.")
+            return
+        
+        all_expenses.sort(key=lambda x: datetime.strptime(x.date, "%Y-%m-%d"))
+
         total = 0
-        for category, list_of_expenses in self._expenses.items():
-            for expense in list_of_expenses:
-                print(f"{expense.date} ({expense.day}) | {expense.item}: {expense.price:.2f}PLN")
-                total += expense.price
+        for expense in all_expenses:
+            print(f"{expense.date} ({expense.day[:3]}) | {expense.item[:20]:<20}|{expense.price:>8.2f} PLN")
+            total += expense.price
         print(f"----------------------\nTOTAL: {total:.2f}PLN")
 
 def main():
