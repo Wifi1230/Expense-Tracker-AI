@@ -20,8 +20,30 @@ class BankAccount:
             return df
         except Exception:
             return pd.DataFrame(columns=["Date", "Day", "Item", "Price", "Category"])
+        
+    def check_anomaly(self, price, category):
+        df = self.load_data()
+        if df.empty:return
 
+        monitored_categories = ["Food", "Jedzenie", "Transport", "Entertainment", "Rozrywka"]
+
+        if category.capitalize() not in [c.capitalize() for c in monitored_categories]:return
+        cat_df = df[df['Category'].str.capitalize() == category.capitalize()]
+
+        if len(cat_df) < 3: 
+            return
+        
+        prices = cat_df['Price'].values
+        mean_val = np.mean(prices)
+        std_val = np.std(prices)
+        z_score = (price - mean_val) / std_val if std_val > 0 else 0
+        if z_score > 2:
+            print(f"\n[!] AI ALERT: Statistical Anomaly Detected! 🚨")
+            print(f"    Your Z-Score is {z_score:.2f} (High deviation from your {category} habits).")
+            print(f"    Average: {mean_val:.2f} PLN | This: {price:.2f} PLN")
+        
     def add_expense (self,item,price,category):
+        self.check_anomaly(price, category)
         date = datetime.now().strftime("%Y-%m-%d")
         day = datetime.now().strftime("%A")
         new_row = pd.DataFrame([[date, day, item, price, category]], columns=["Date", "Day", "Item", "Price", "Category"])
@@ -69,12 +91,6 @@ class BankAccount:
         total = df['Price'].sum()
         print("-" * 70)
         print(f"{'TOTAL:':<35} {total:>10.2f} PLN")
-
-        if len(df) > 2:
-            mean_val = np.mean(df['Price'])
-            if df['Price'].max() > mean_val * 3:
-                print("\n[!] INFO: AI ALERT: High-value transactions detected!")
-        print("="*70)
 
 def main():
     account = BankAccount()
