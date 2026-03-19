@@ -87,10 +87,14 @@ class BankAccount:
 
         for _, row in df.iterrows():
             print(f"{row['Date']:<12} | {row['Item'][:20]:<20} | {row['Price']:>7.2f} PLN | {row['Category']}")
-        
+
+        monitored_categories = ["Food", "Jedzenie", "Transport", "Entertainment", "Rozrywka"]
         total = df['Price'].sum()
+        total_typical = df[df['Category'].isin(monitored_categories)]['Price'].sum()
         print("-" * 70)
-        print(f"{'TOTAL:':<35} {total:>10.2f} PLN")
+        print(f"{'TOTAL EXPENSES:':<35} {total:>10.2f} PLN")
+        print(f"{'  - TYPICAL (Lifestyle):':<35} {total_typical:>10.2f} PLN")
+        print(f"{'  - OTHER (Fixed/Extra):':<35} {total - total_typical:>10.2f} PLN")
 
 def main():
     account = BankAccount()
