@@ -2,12 +2,13 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import os
-MONITORED_CATEGORIES = ["food", "transport", "entertainment"]
+MONITORED_CATEGORIES = {"food", "transport", "entertainment"}
 
 class BankAccount:
     def __init__(self, filename="expenses.csv"):
         self.filename = filename
         self.setup_csv()
+        self.df = self.load_data()
 
     def setup_csv(self):
         if not os.path.exists(self.filename):
@@ -21,13 +22,13 @@ class BankAccount:
             return pd.DataFrame(columns=["Date", "Day", "Item", "Price", "Category"])
         
     def check_anomaly(self, price, category):
-        df = self.load_data()
+        df = self.df
         if df.empty:return
 
-        if category.lower() not in [c.lower() for c in MONITORED_CATEGORIES]:return
-        cat_df = df[df['Category'].str.lower() == category.lower()]
+        if category not in MONITORED_CATEGORIES:return
+        cat_df = df[df['Category'] == category]
 
-        if len(cat_df) < 3: 
+        if len(cat_df) < 5: 
             return
         
         prices = cat_df['Price'].values
@@ -47,29 +48,32 @@ class BankAccount:
         new_row = pd.DataFrame([[date, day, item, price, category]], columns=["Date", "Day", "Item", "Price", "Category"])
         new_row.to_csv(self.filename, mode='a', header=False, index=False, encoding='utf-8')
         print(f"\n[v] Added: {item} ({price:.2f} PLN)")
+        self.df = pd.concat([self.df, new_row], ignore_index=True)
 
     def delete_expense(self):
-        df = self.load_data()
+        df = self.df
         if df.empty:
             print("Nothing to delete.")
             return
         
+        df = df.reset_index(drop=True)
         print("\n--- SELECT ITEM TO DELETE ---")
         print(df[["Date", "Item", "Price"]])
 
         try:
             choice = int(input("\nEnter Index number to delete (or -1 to cancel): "))
-            if choice == -1: return
+            if choice == -1 or choice < 0 or choice >= len(df): return
             
             df = df.drop(index=choice)
             df.to_csv(self.filename, index=False, encoding='utf-8')
+            self.df = df
             print(f"[v] Item deleted.")
             
         except (ValueError, KeyError):
             print("[!] Invalid index. Look at the numbers on the left.")
 
     def __call__(self):
-        df = self.load_data()
+        df = self.df.copy()
         if df.empty:
             print("No expenses to show.")
             return
@@ -83,11 +87,11 @@ class BankAccount:
         print(f"{'DATE':<12} | {'ITEM':<20} | {'VALUE':>10} | {'CATEGORY'}")
         print("-" * 70)
 
-        for _, row in df.iterrows():
-            print(f"{row['Date']:<12} | {row['Item'][:20]:<20} | {row['Price']:>7.2f} PLN | {row['Category']}")
+        for row in df.itertuples():
+            print(f"{row.Date:<12} | {row.Item[:20]:<20} | {row.Price:>7.2f} PLN | {row.Category}")
 
         total = df['Price'].sum()
-        total_typical = df[df['Category'].str.lower().isin(MONITORED_CATEGORIES)]['Price'].sum()
+        total_typical = df[df['Category'].isin(MONITORED_CATEGORIES)]['Price'].sum()
         print("-" * 70)
         print(f"{'TOTAL EXPENSES:':<35} {total:>10.2f} PLN")
         print(f"{'  - TYPICAL (Lifestyle):':<35} {total_typical:>10.2f} PLN")
@@ -102,9 +106,11 @@ def main():
             while True:
                 item = input("Item name: ").strip()
                 price_raw = input("Price: ")
-                category = input("Category: ").strip()
+                category = input("Category: ").strip().lower()
                 try:
                     price = float(price_raw)
+                    if price <= 0:
+                        raise ValueError
                     if not item or not category:
                         raise ValueError("Empty strings")
                     account.add_expense(item, float(price),category)
@@ -119,7 +125,7 @@ def main():
             print("Goodbye!")
             break
         else:
-            print("Pick valid option (1-3)")
+            print("Pick valid option (1-4)")
             continue
 if __name__=="__main__":
     main()
