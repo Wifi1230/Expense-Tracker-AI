@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import os
+MONITORED_CATEGORIES = ["food", "transport", "entertainment"]
 
 class BankAccount:
     def __init__(self, filename="expenses.csv"):
@@ -15,20 +16,16 @@ class BankAccount:
     
     def load_data(self):
         try:
-            df = pd.read_csv(self.filename)
-            df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
-            return df
-        except Exception:
+            return pd.read_csv(self.filename)
+        except FileNotFoundError:
             return pd.DataFrame(columns=["Date", "Day", "Item", "Price", "Category"])
         
     def check_anomaly(self, price, category):
         df = self.load_data()
         if df.empty:return
 
-        monitored_categories = ["Food", "Jedzenie", "Transport", "Entertainment", "Rozrywka"]
-
-        if category.capitalize() not in [c.capitalize() for c in monitored_categories]:return
-        cat_df = df[df['Category'].str.capitalize() == category.capitalize()]
+        if category.lower() not in [c.lower() for c in MONITORED_CATEGORIES]:return
+        cat_df = df[df['Category'].str.lower() == category.lower()]
 
         if len(cat_df) < 3: 
             return
@@ -44,8 +41,9 @@ class BankAccount:
         
     def add_expense (self,item,price,category):
         self.check_anomaly(price, category)
-        date = datetime.now().strftime("%Y-%m-%d")
-        day = datetime.now().strftime("%A")
+        now = datetime.now()
+        date = now.strftime("%Y-%m-%d")
+        day = now.strftime("%A")
         new_row = pd.DataFrame([[date, day, item, price, category]], columns=["Date", "Day", "Item", "Price", "Category"])
         new_row.to_csv(self.filename, mode='a', header=False, index=False, encoding='utf-8')
         print(f"\n[v] Added: {item} ({price:.2f} PLN)")
@@ -88,9 +86,8 @@ class BankAccount:
         for _, row in df.iterrows():
             print(f"{row['Date']:<12} | {row['Item'][:20]:<20} | {row['Price']:>7.2f} PLN | {row['Category']}")
 
-        monitored_categories = ["Food", "Jedzenie", "Transport", "Entertainment", "Rozrywka"]
         total = df['Price'].sum()
-        total_typical = df[df['Category'].isin(monitored_categories)]['Price'].sum()
+        total_typical = df[df['Category'].str.lower().isin(MONITORED_CATEGORIES)]['Price'].sum()
         print("-" * 70)
         print(f"{'TOTAL EXPENSES:':<35} {total:>10.2f} PLN")
         print(f"{'  - TYPICAL (Lifestyle):':<35} {total_typical:>10.2f} PLN")
@@ -110,7 +107,7 @@ def main():
                     price = float(price_raw)
                     if not item or not category:
                         raise ValueError("Empty strings")
-                    account.add_expense(item.capitalize(), float(price),category.capitalize())
+                    account.add_expense(item, float(price),category)
                     break
                 except ValueError:
                     print("\n[!] Error: Invalid price or empty fields. Try again.")
