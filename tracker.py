@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from sklearn.ensemble import IsolationForest
 import os
-MONITORED_CATEGORIES = {"food", "transport", "entertainment"}
+MONITORED_CATEGORIES = {"food", "jedzenie",  "transport", "entertainment", "rozrywka"}
 
 class BankAccount:
     def __init__(self, filename="expenses.csv"):
@@ -28,18 +29,38 @@ class BankAccount:
         if category not in MONITORED_CATEGORIES:return
         cat_df = df[df['Category'] == category]
 
-        if len(cat_df) < 5: 
-            return
+        if len(cat_df) < 5: return
         
         prices = cat_df['Price'].values
         mean_val = np.mean(prices)
-        std_val = np.std(prices)
+        std_val = np.std(prices,ddof=1)
         z_score = (price - mean_val) / std_val if std_val > 0 else 0
         if z_score > 2:
-            print(f"\n[!] AI ALERT: Statistical Anomaly Detected! 🚨")
-            print(f"    Your Z-Score is {z_score:.2f} (High deviation from your {category} habits).")
-            print(f"    Average: {mean_val:.2f} PLN | This: {price:.2f} PLN")
+            print(f"\n[!] STATISTICAL ALERT: Z-Score is {z_score:.2f}")
+            self.check_anomaly_ml(price, category)
         
+    def check_anomaly_ml(self, price, category):
+        if len(self.df) < 10: return
+
+        df_ml = self.df.copy()
+        df_ml['Day_num'] = pd.to_datetime(df_ml['Date']).dt.dayofweek
+        X = df_ml[['Price', 'Day_num']]
+
+        model = IsolationForest(contamination=0.1, random_state=42)
+        model.fit(X)
+
+        now_day_num = datetime.now().weekday()
+        new_data = pd.DataFrame([[price, now_day_num]], columns=['Price', 'Day_num'])
+
+        prediction = model.predict(new_data)
+        decision_score = model.decision_function(new_data)
+
+        print(f"\nML Analysis: Prediction={prediction[0]} | Anomaly Score={decision_score[0]:.4f}")
+        
+        if prediction[0] == -1:
+            print(f"[!!!] ML ALERT: Isolation Forest confirmed this looks SUSPICIOUS! 🤖")
+            print(f"This expense doesn't fit your usual patterns for this day of the week.")
+
     def add_expense (self,item,price,category):
         self.check_anomaly(price, category)
         now = datetime.now()
@@ -47,8 +68,8 @@ class BankAccount:
         day = now.strftime("%A")
         new_row = pd.DataFrame([[date, day, item, price, category]], columns=["Date", "Day", "Item", "Price", "Category"])
         new_row.to_csv(self.filename, mode='a', header=False, index=False, encoding='utf-8')
-        print(f"\n[v] Added: {item} ({price:.2f} PLN)")
         self.df = pd.concat([self.df, new_row], ignore_index=True)
+        print(f"\n[v] Added: {item} ({price:.2f} PLN)")
 
     def delete_expense(self):
         df = self.df

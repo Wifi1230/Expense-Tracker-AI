@@ -1,16 +1,20 @@
 🚀 AI-Powered Professional Expense Tracker
-A robust personal finance management tool built with **Python 3.14**, leveraging the power of **Pandas** for data engineering and **NumPy** for statistical analysis. This project demonstrates a full production-ready pipeline, from data validation to containerized deployment.
+A sophisticated personal finance management tool built with **Python 3.14**, featuring a **Hybrid Anomaly Detection System** that combines classical statistics with modern Machine Learning.
 
 ✨ Key Features
-* **Data Engineering**: Advanced data manipulation using **Pandas DataFrames** (SQL-like logic for sorting and aggregation).
-* **AI Anomaly Detection**: Implementation of an unsupervised statistical model using **NumPy** to detect high-value transaction outliers.
-* **Data Persistence**: Stateless architecture with automated CSV synchronization.
-* **Robust Validation**: Intelligent input handling (supports multiple decimal formats and prevents data corruption).
+* **Hybrid AI Anomaly Detection**: 
+    * **Layer 1 (Statistical)**: Real-time **Z-Score** analysis using **NumPy** to catch immediate value outliers based on category history.
+    * **Layer 2 (Machine Learning)**: **Isolation Forest** (Unsupervised Learning) via **Scikit-Learn** to detect complex behavioral patterns, analyzing both price and temporal data (Day of Week).
+* **Data Engineering**: Advanced manipulation using **Pandas DataFrames** with optimized memory management (`itertuples`, defensive copying to prevent `SettingWithCopyWarning`).
+* **Smart Preprocessing**: Automated **Feature Engineering** (encoding Dates into cyclical Day-of-Week numerical features) for ML model compatibility.
+* **Robust Validation**: Strict input sanitization, case-insensitive category matching, and "Cold Start" protection for the ML engine (requires min. 10 records to activate).
+* **Data Persistence**: Stateless architecture with automated CSV synchronization and in-memory state tracking for high performance.
 * **DevOps Ready**: Fully containerized using **Docker** for consistent deployment across any environment.
 
 🛠 Tech Stack
 * **Language**: Python 3.14
-* **Libraries**: Pandas, NumPy
+* **AI/ML**: Scikit-Learn (Isolation Forest), NumPy
+* **Data Science**: Pandas
 * **Containerization**: Docker
 * **Version Control**: Git / GitHub
 
