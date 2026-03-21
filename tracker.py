@@ -20,10 +20,10 @@ class BankAccount:
     def load_data(self):
         try:
             return pd.read_csv(self.filename)
-        except FileNotFoundError:
+        except (FileNotFoundError, pd.errors.EmptyDataError, pd.errors.ParserError):
             return pd.DataFrame(columns=["Date", "Day", "Item", "Price", "Category"])
         
-    def check_anomaly(self, price, category):
+    def check_anomaly(self, price, category,date_obj):
         df = self.df
         if df.empty:return
 
@@ -38,9 +38,9 @@ class BankAccount:
         z_score = (price - mean_val) / std_val if std_val > 0 else 0
         if z_score > 2:
             print(f"\n[!] STATISTICAL ALERT: Z-Score is {z_score:.2f}")
-            self.check_anomaly_ml(price, category)
+            self.check_anomaly_ml(price, category,date_obj)
         
-    def check_anomaly_ml(self, price, category):
+    def check_anomaly_ml(self, price, category,date_obj):
         df_ml = self.df[self.df['Category'] == category].copy()
 
         if len(df_ml) < 10: return
@@ -63,8 +63,8 @@ class BankAccount:
         model = self.models[category]
         scaler = self.scalers[category]
 
-        now_day_num = datetime.now().weekday()
-        new_data = pd.DataFrame([[price, now_day_num]], columns=['Price', 'Day_num'])
+        transaction_day_num = date_obj.weekday()
+        new_data = pd.DataFrame([[price, transaction_day_num]], columns=['Price', 'Day_num'])
         new_scaled = scaler.transform(new_data)
 
         prediction = model.predict(new_scaled)
@@ -77,8 +77,8 @@ class BankAccount:
             print(f"This doesn't match your usual {category} spending pattern.")
 
     def add_expense (self,item,price,category):
-        self.check_anomaly(price, category)
         now = datetime.now()
+        self.check_anomaly(price, category,now)
         date = now.strftime("%Y-%m-%d")
         day = now.strftime("%A")
         new_row = pd.DataFrame([[date, day, item, price, category]], columns=["Date", "Day", "Item", "Price", "Category"])
