@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
 import os
 MONITORED_CATEGORIES = {"food", "jedzenie",  "transport", "entertainment", "rozrywka"}
 
@@ -40,26 +41,40 @@ class BankAccount:
             self.check_anomaly_ml(price, category)
         
     def check_anomaly_ml(self, price, category):
-        if len(self.df) < 10: return
+        df_ml = self.df[self.df['Category'] == category].copy()
 
-        df_ml = self.df.copy()
+        if len(df_ml) < 10: return
+
         df_ml['Day_num'] = pd.to_datetime(df_ml['Date']).dt.dayofweek
         X = df_ml[['Price', 'Day_num']]
 
-        model = IsolationForest(contamination=0.1, random_state=42)
-        model.fit(X)
+        if not hasattr(self, "models"):
+            self.models = {}
+            self.scalers = {}
+
+        if category not in self.models or category not in self.scalers or len(df_ml) % 10 == 0:
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X)
+            model = IsolationForest(contamination=0.1, random_state=42)
+            model.fit(X_scaled)
+            self.models[category] = model
+            self.scalers[category] = scaler
+        
+        model = self.models[category]
+        scaler = self.scalers[category]
 
         now_day_num = datetime.now().weekday()
         new_data = pd.DataFrame([[price, now_day_num]], columns=['Price', 'Day_num'])
+        new_scaled = scaler.transform(new_data)
 
-        prediction = model.predict(new_data)
-        decision_score = model.decision_function(new_data)
+        prediction = model.predict(new_scaled)
+        decision_score = model.decision_function(new_scaled)
 
-        print(f"\nML Analysis: Prediction={prediction[0]} | Anomaly Score={decision_score[0]:.4f}")
+        print(f"\nML Analysis ({category}): Prediction={prediction[0]} | Score={decision_score[0]:.4f}")
         
         if prediction[0] == -1:
-            print(f"[!!!] ML ALERT: Isolation Forest confirmed this looks SUSPICIOUS! 🤖")
-            print(f"This expense doesn't fit your usual patterns for this day of the week.")
+            print(f"[!!!] ML ALERT ({category}): Suspicious expense 🤖")
+            print(f"This doesn't match your usual {category} spending pattern.")
 
     def add_expense (self,item,price,category):
         self.check_anomaly(price, category)
