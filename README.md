@@ -1,20 +1,19 @@
-🚀 AI-Powered Professional Expense Tracker
-A sophisticated personal finance management tool built with **Python 3.14**, featuring a **Hybrid Anomaly Detection System** that combines classical statistics with modern Machine Learning.
+🚀 AI-Powered Expense Tracker
+A personal finance tracking tool built with Python, featuring a Hybrid Anomaly Detection System that combines statistical methods with machine learning.
 
 ✨ Key Features
-* **Hybrid AI Anomaly Detection**: 
-    * **Layer 1 (Statistical)**: Real-time **Z-Score** analysis using **NumPy** to catch immediate value outliers based on category history.
-    * **Layer 2 (Machine Learning)**: **Isolation Forest** (Unsupervised Learning) via **Scikit-Learn** to detect complex behavioral patterns, analyzing both price and temporal data (Day of Week).
-* **Data Engineering**: Advanced manipulation using **Pandas DataFrames** with optimized memory management (`itertuples`, defensive copying to prevent `SettingWithCopyWarning`).
-* **Smart Preprocessing**: Automated **Feature Engineering** (encoding Dates into cyclical Day-of-Week numerical features) for ML model compatibility.
-* **Robust Validation**: Strict input sanitization, case-insensitive category matching, and "Cold Start" protection for the ML engine (requires min. 10 records to activate).
-* **Data Persistence**: Stateless architecture with automated CSV synchronization and in-memory state tracking for high performance.
-* **DevOps Ready**: Fully containerized using **Docker** for consistent deployment across any environment.
+* **Hybrid Anomaly Detection**: 
+    * **Layer 1 (Statistical)**: Real-time **Z-Score** analysis using **NumPy** to detect unusual expenses within a category.
+    * **Layer 2 (Machine Learning)**: **Isolation Forest** via **Scikit-Learn** to identify more complex spending anomalies based on price and day of the week.
+* **Data Preprocessing**: Efficient handling of data using Pandas DataFrames.
+* **Feature Engineering**: Automatic extraction of day-of-week from transaction dates for ML model input.
+* **Robust Validation**: Input checks for price, category, and empty fields; cold-start protection for ML (requires min. 10 records).
+* **Data Persistence**: Automatic CSV synchronization and in-memory tracking of expenses.
 
 🛠 Tech Stack
 * **Language**: Python 3.14
 * **AI/ML**: Scikit-Learn (Isolation Forest), NumPy
-* **Data Science**: Pandas
+* **Data Analysis**: Pandas
 * **Containerization**: Docker
 * **Version Control**: Git / GitHub
 
