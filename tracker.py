@@ -4,13 +4,18 @@ from datetime import datetime
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 import os
+import joblib
+
 MONITORED_CATEGORIES = {"food", "jedzenie",  "transport", "entertainment", "rozrywka"}
 
 class BankAccount:
     def __init__(self, filename="expenses.csv"):
         self.filename = filename
+        self.models_file = "models.pkl"
+        self.scalers_file = "scalers.pkl"
         self.setup_csv()
         self.df = self.load_data()
+        self.load_models()
 
     def setup_csv(self):
         if not os.path.exists(self.filename):
@@ -23,6 +28,19 @@ class BankAccount:
         except (FileNotFoundError, pd.errors.EmptyDataError, pd.errors.ParserError):
             return pd.DataFrame(columns=["Date", "Day", "Item", "Price", "Category"])
         
+    def load_models(self):
+        if os.path.exists(self.models_file) and os.path.exists(self.scalers_file):
+            self.models = joblib.load(self.models_file)
+            self.scalers = joblib.load(self.scalers_file)
+            print("\n[i] ML Models loaded from disk.")
+        else:
+            self.models = {}
+            self.scalers = {}
+
+    def save_models(self):
+        joblib.dump(self.models, self.models_file)
+        joblib.dump(self.scalers, self.scalers_file)
+
     def check_anomaly(self, price, category,date_obj):
         df = self.df
         if df.empty:return
@@ -48,10 +66,6 @@ class BankAccount:
         df_ml['Day_num'] = pd.to_datetime(df_ml['Date']).dt.dayofweek
         X = df_ml[['Price', 'Day_num']]
 
-        if not hasattr(self, "models"):
-            self.models = {}
-            self.scalers = {}
-
         if category not in self.models or category not in self.scalers or len(df_ml) % 10 == 0:
             scaler = StandardScaler()
             X_scaled = scaler.fit_transform(X)
@@ -59,7 +73,9 @@ class BankAccount:
             model.fit(X_scaled)
             self.models[category] = model
             self.scalers[category] = scaler
-        
+            self.save_models()
+            print(f"[i] ML Model for '{category}' retrained and saved to disk.")
+            
         model = self.models[category]
         scaler = self.scalers[category]
 
